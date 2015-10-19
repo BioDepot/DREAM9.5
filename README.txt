@@ -13,15 +13,15 @@ Castration-Resistant Prostate Cancer (mCRPC).
   
 
 2. FILE LIST
-	MAIN.R 						: Contains the main R script to analize and generate prediction.
-	inc_functions.R 			: Contains functions such as data split, etc, required by Main Script.
-	inc_datacleanup.R			: Contains function to perform data cleansing and pre-processes
-	score.R						: Contains the scoring script to compute AUC as provided by Synapse
+	MAIN.R 				: Contains the main R script to analize and generate prediction.
+	inc_functions.R 	: Contains functions such as data split, etc, required by Main Script.
+	inc_datacleanup.R	: Contains function to perform data cleansing and pre-processes
+	score.R				: Contains the scoring script to compute AUC as provided by Synapse
 	CoreTable_training.csv 		: Contains the training data as provided by Synapse
 	CoreTable_validation.csv	: Contains the Validation data as provided by Synapse.
 	CoreTable_leaderboard.csv	: Contains the Validation data as provided by Synapse. This will be concatenated with CoreTable_validation.csv
 
-	README.txt 					: this file.
+	README.txt 			: this file.
 
 3. REQUIRED R PACKAGES
 	(FSelector) 
