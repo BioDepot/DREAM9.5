@@ -23,8 +23,8 @@
 ###########################################################################################
 
 # ADJUST-ACCORDINGLY (IFNECESSARY)
-setwd("~/Dropbox/DREAM-F1000")
-
+path.script = "~/Documents/GITHUB/DREAM9.5/"
+setwd(path.script)
 
 require(FSelector) 
 require(e1071)
@@ -39,15 +39,15 @@ library(impute)
 library(caret)
 library(randomForest)
 
-source("inc_datacleanup.r")     # Contains functions to clean up the data
-source("score.R")               # Contains Score.R from Synapse as scoring
-source("inc_functions.R")       # Contains various functions (evaluator, etc)
+source(paste0(path.script,"inc_datacleanup.r"))     # Contains functions to clean up the data
+source(paste0(path.script,"score.R"))               # Contains Score.R from Synapse as scoring
+source(paste0(path.script,"inc_functions.R"))       # Contains various functions (evaluator, etc)
 
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
 CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
-# CV                    = seq(1,30,5)
+CV                    = seq(3,30,5)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
@@ -74,14 +74,13 @@ curr.testing.data     <- NULL            # A SUBSET OF CURRENT FOLD'S TESTING DA
 SCORING.TABLE         <- NULL            # SCORE RESULTS 
 OUTPUT.TABLE          <- NULL            # SUBSET OF CURR.TESTING DATA WITH PROB RESULT
 FINAL.TABLE           <- NULL            # CORE TESTING/VALIDATION FROM SYNAPSE WITH PREDICTION
-colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
 
 # 
 ####### PREPROCESS ##############################################################
 ## GET THE DATA
-core_table_training     <- read.csv("CoreTable_training.csv"  , stringsAsFactors = F)
-core_table_validation1  <- read.csv("CoreTable_validation.csv", stringsAsFactors = F)
-core_table_validation2  <- read.csv("CoreTable_leaderboard.csv", stringsAsFactors = F)
+core_table_training     <- read.csv("DATA/CoreTable_training.csv"  , stringsAsFactors = F)
+core_table_validation1  <- read.csv("DATA/Table_validation.csv", stringsAsFactors = F)
+core_table_validation2  <- read.csv("DATA/CoreTable_leaderboard.csv", stringsAsFactors = F)
 core_table_validation   <- rbind(core_table_validation1, core_table_validation2)
 
 ## GET THE DATA CLEANED UP
@@ -165,7 +164,7 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 # rf.ntree              = cv
 # balace.ratio          = cv
 # rf.mtry               = cv
-# k                     = cv
+k                     = cv
 library(caret)
 train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
 detach(package:caret, unload=T, force=T) 
@@ -180,7 +179,7 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   
   
   if (curr.study == 4 ){         #  USE ALL FOR TESTING/TRAINING
-    # set.seed(123) # Tuning? Normal: Disabled #####
+    set.seed(123) # Tuning? Normal: Disabled #####
     curr.training.data <- table.for.model[train.index,]
     curr.testing.data  <- table.for.model[-train.index,]
     testing.name      <- paste("ALL-fold")
@@ -232,8 +231,13 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     
   }
   ##### FEATURE SELECTION ##############################################################
-  weights <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
-  features <- c(halabi, cutoff.k(weights,k))
+  # weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
+  # features  <- c(halabi, cutoff.k(weights,k))
+  
+  sub.fs      <- curr.training.data
+  sub.fs$RPT  <- NULL
+  weights     <- chi.squared(DISCONT ~., sub.fs)
+  features    <- cutoff.k(weights,k)
 
   ####### CLASSIFICATION / MODEL ##############################################################
   
@@ -261,6 +265,7 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   
   ## WRITE VALIDATION OUTPUT AS CSV
   FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
+  colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
   write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
   # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
 } # END OF FOLD PER STUDY
