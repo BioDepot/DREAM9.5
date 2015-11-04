@@ -46,13 +46,13 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
-CV                    = seq(3,30,5)
+CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
+# CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
-# STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
+STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -62,13 +62,16 @@ balace.ratio          = 31
 rf.ntree              = 180
 rf.mtry               = 4
 k                     = 6
+# k = 43
+
+x.axis                = "Cross-fold Validation"
 
 ####### VARIABLE LIST ##############################################################
 # IN GENERAL, HERE'S THE VARIABLES
 core_table_training   <- NULL            # ORIGINAL CORE TRAINING  (RAW)
 core_table_validation <- NULL            # ORIGINAL CORE TESTING  (RAW)
 table.for.model       <- NULL            # CLEANED, AUGMENTED CORE TRAINING
-table.for.validation  <- NULL            # CLEANED, UGMENTED CORE TESTING
+table.for.validation  <- NULL            # CLEANED, AUGMENTED CORE TESTING
 curr.training.data    <- NULL            # A SUBSET OF CURRENT FOLD'S TRAINING DATA
 curr.testing.data     <- NULL            # A SUBSET OF CURRENT FOLD'S TESTING DATA
 SCORING.TABLE         <- NULL            # SCORE RESULTS 
@@ -78,9 +81,9 @@ FINAL.TABLE           <- NULL            # CORE TESTING/VALIDATION FROM SYNAPSE 
 # 
 ####### PREPROCESS ##############################################################
 ## GET THE DATA
-core_table_training     <- read.csv("DATA/CoreTable_training.csv"  , stringsAsFactors = F)
-core_table_validation1  <- read.csv("DATA/Table_validation.csv", stringsAsFactors = F)
-core_table_validation2  <- read.csv("DATA/CoreTable_leaderboard.csv", stringsAsFactors = F)
+core_table_training     <- read.csv("./DATA/CoreTable_training.csv"  , stringsAsFactors = F)
+core_table_validation1  <- read.csv("./DATA/CoreTable_validation.csv", stringsAsFactors = F)
+core_table_validation2  <- read.csv("./DATA/CoreTable_leaderboard.csv", stringsAsFactors = F)
 core_table_validation   <- rbind(core_table_validation1, core_table_validation2)
 
 ## GET THE DATA CLEANED UP
@@ -164,7 +167,7 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 # rf.ntree              = cv
 # balace.ratio          = cv
 # rf.mtry               = cv
-k                     = cv
+# k                     = cv
 library(caret)
 train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
 detach(package:caret, unload=T, force=T) 
@@ -178,12 +181,18 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   testing.name       <- get.testing.name(curr.study)
   
   
+  testing.name       <- get.testing.name(curr.study)
+  
+
+    
   if (curr.study == 4 ){         #  USE ALL FOR TESTING/TRAINING
-    set.seed(123) # Tuning? Normal: Disabled #####
+    # set.seed(123) # Tuning? Normal: Disabled #####
     curr.training.data <- table.for.model[train.index,]
     curr.testing.data  <- table.for.model[-train.index,]
     testing.name      <- paste("ALL-fold")
   }
+  curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+  
   
   ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
 #   to.drop <- union(to.drop, c("SMOKFREQ",	"SMOKSTAT", "HEIGHTBL", "WEIGHTBL",	"WEIGHT", "NON_TARGET", "AGE", "X"))
@@ -231,13 +240,15 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     
   }
   ##### FEATURE SELECTION ##############################################################
-  # weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
-  # features  <- c(halabi, cutoff.k(weights,k))
+  ##### USING HALABI
+  weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
+  features  <- c(halabi, cutoff.k(weights,k))
   
-  sub.fs      <- curr.training.data
-  sub.fs$RPT  <- NULL
-  weights     <- chi.squared(DISCONT ~., sub.fs)
-  features    <- cutoff.k(weights,k)
+  ##### UNIVARIATE (DEFAULT=DISABLED)
+#   sub.fs      <- curr.training.data
+#   sub.fs$RPT  <- NULL
+#   weights     <- chi.squared(DISCONT ~., sub.fs)
+#   features    <- cutoff.k(weights,k)
 
   ####### CLASSIFICATION / MODEL ##############################################################
   
@@ -275,7 +286,7 @@ SCORING.TABLE            <- SCORING.TABLE[,-1]
 SCORING.TABLE            <- apply(SCORING.TABLE,2,as.numeric)
 row.names(SCORING.TABLE) <- scoring.rows
 print(SCORING.TABLE)
-plot(cbind(CV,SCORING.TABLE[,1]))
+plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
 write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
