@@ -23,7 +23,7 @@
 ###########################################################################################
 
 # ADJUST-ACCORDINGLY (IFNECESSARY)
-path.script = "~/Documents/GITHUB/DREAM9.5/"
+path.script = "~/Workspaces/git_repos/DREAM9.5/"
 setwd(path.script)
 
 require(FSelector) 
@@ -38,6 +38,9 @@ library(e1071)
 library(impute)
 library(caret)
 library(randomForest)
+library(mlr)
+library(unbalanced)
+
 
 source(paste0(path.script,"inc_datacleanup.r"))     # Contains functions to clean up the data
 source(paste0(path.script,"score.R"))               # Contains Score.R from Synapse as scoring
@@ -46,13 +49,23 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
+<<<<<<< HEAD
 CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
+=======
+CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
+CV <- 1
+>>>>>>> origin/master
 # CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
+<<<<<<< HEAD
 STUDY                 = c(1,2,3,4)  
 STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
+=======
+STUDY                 = c(1,2,3)  
+# STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
+>>>>>>> origin/master
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -171,7 +184,7 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 library(caret)
 train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
 detach(package:caret, unload=T, force=T) 
-
+SCORING.TABLE <- NULL
 for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
 {
   ## RETRIEVE THE CLEAN DATA SET 
@@ -214,9 +227,8 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
 
 
   ####### BALANCE THE TRAINING DATA ##############################################################
-  library(mlr)
-  library(unbalanced)
   set.seed(10)
+  library(unbalanced)
   balancer.ubunder                <- ubUnder(X=curr.training.data[,-c(3)], Y=curr.training.data[,'DISCONT'], perc = balace.ratio, method = "percUnder")
   curr.training.data              <- cbind(balancer.ubunder$Y, balancer.ubunder$X)
   names(curr.training.data)[1]    <- paste("DISCONT")
@@ -269,21 +281,30 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   SCORING.TABLE         <- rbind(SCORING.TABLE, c(testing.name, dream9.score(prob, curr.testing.data$DISCONT)))
   ACC                   <- round(score_q2(prob, curr.testing.data$DISCONT)*100)
   
-  # setwd("~/Dropbox/DREAM-F1000/OUTPUT")
+   setwd("~/Workspaces/git_repos/DREAM9.5/DATA/")
   ## WRITE OUTPUT AS CSV
-  # write.csv(OUTPUT.TABLE, file = paste("OUTPUT/SUBSETTEST-",testing.name,"-",ACC,".csv", sep=""))
-  # print(paste("---- FILE:", "SUBSETTEST-",testing.name,"-",ACC,".csv  WRITTEN TO HARDDRIVE ---",sep=""))
-  # write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
-  # print(paste("---- FILE:", "SCORE-",testing.name,"-",ACC,".csv WRITTEN TO HARDDRIVE ---",sep=""))
+  write.csv(OUTPUT.TABLE, file = paste("OUTPUT/SUBSETTEST-",testing.name,"-",ACC,".csv", sep=""))
+  print(paste("---- FILE:", "SUBSETTEST-",testing.name,"-",ACC,".csv  WRITTEN TO HARDDRIVE ---",sep=""))
+  write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
+  print(paste("---- FILE:", "SCORE-",testing.name,"-",ACC,".csv WRITTEN TO HARDDRIVE ---",sep=""))
   
   
   ## WRITE VALIDATION OUTPUT AS CSV
   FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
   colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
+<<<<<<< HEAD
   # write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
   print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
+=======
+  write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
+  print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
+  setwd(path.script)
+  
+>>>>>>> origin/master
 } # END OF FOLD PER STUDY
 } # END OF CROSS-FOLD VALIDATION
+
+
 scoring.rows             <- SCORING.TABLE[,1]
 SCORING.TABLE            <- SCORING.TABLE[,-1]
 SCORING.TABLE            <- apply(SCORING.TABLE,2,as.numeric)
