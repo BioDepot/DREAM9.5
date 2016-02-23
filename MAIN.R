@@ -46,13 +46,13 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
+CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
 # CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
-STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
+STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -191,7 +191,9 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     curr.testing.data  <- table.for.model[-train.index,]
     testing.name      <- paste("ALL-fold")
   }
-  curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+  
+  ## ONLY USE THIS TO PERFORM SUBMISSION: START ####
+  # curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
   
   
   ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
@@ -202,7 +204,7 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
 #   tmp     <- tmp[tmp==0]
 #   to.drop <- union(to.drop, attr(tmp,"names"))
 #   curr.training.data <- curr.training.data[,!names(curr.training.data) %in% to.drop]
-#   
+############### STOP    
   
   ## UPDATE THE LIST OF VARIABLE GROUPS
   all.features          <- intersect(colnames(curr.training.data),colnames(curr.testing.data))
@@ -243,6 +245,7 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   ##### USING HALABI
   weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
   features  <- c(halabi, cutoff.k(weights,k))
+  # features  <- c( cutoff.k(weights,k))
   
   ##### UNIVARIATE (DEFAULT=DISABLED)
 #   sub.fs      <- curr.training.data
@@ -277,8 +280,8 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   ## WRITE VALIDATION OUTPUT AS CSV
   FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
   colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
-  write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
-  # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
+  # write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
+  print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
 } # END OF FOLD PER STUDY
 } # END OF CROSS-FOLD VALIDATION
 scoring.rows             <- SCORING.TABLE[,1]
@@ -289,4 +292,6 @@ print(SCORING.TABLE)
 plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
-write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
+# write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
+save.image("~/Documents/GITHUB/DREAM9.5/f1000.RData")
+#load("~/Documents/GITHUB/DREAM9.5/f1000.RData")
