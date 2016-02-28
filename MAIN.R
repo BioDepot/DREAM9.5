@@ -49,23 +49,17 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-<<<<<<< HEAD
 CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
-=======
 CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
 CV <- 1
->>>>>>> origin/master
 # CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
-<<<<<<< HEAD
 STUDY                 = c(1,2,3,4)  
 STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
-=======
 STUDY                 = c(1,2,3)  
 # STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
->>>>>>> origin/master
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -130,9 +124,6 @@ tmp                           <- apply(tmp,2,factor)
 clean_data                    <- cbind(clean_data,tmp)
 factor.cols                   <- union(colnames(tmp),factor.cols)
 binary.cols                   <- union(colnames(tmp),binary.cols)
-to.drop                       <- c(to.explode,"TRT3_ID","GLEAS_DX","NON_TARGET", "ABDOMINAL","BONE","WEIGHTBL","HEIGHTBL")
-clean_data                    <- clean_data[,!(colnames(clean_data) %in% to.drop)]
-row.names(clean_data)         <- clean_data$RPT
 halabi <- c("RACE_C","AGEGRP2","BMI","PRIOR_RADIOTHERAPY","ANALGESICS","ECOG_C","GLEAS_DX","ALB","LDH", "WBC",
             "AST","TBILI","PLT", "HB","ALT","TESTO","PSA","ALP")
 halabi <- c("RACE_C","AGEGRP2","BMI","PRIOR_RADIOTHERAPY","ANALGESICS","ECOG_C","ALB","LDH", "WBC",
@@ -204,10 +195,11 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     curr.testing.data  <- table.for.model[-train.index,]
     testing.name      <- paste("ALL-fold")
   }
-  
+
   ## ONLY USE THIS TO PERFORM SUBMISSION: START ####
   # curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
-  
+#  curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+
   
   ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
 #   to.drop <- union(to.drop, c("SMOKFREQ",	"SMOKSTAT", "HEIGHTBL", "WEIGHTBL",	"WEIGHT", "NON_TARGET", "AGE", "X"))
@@ -292,15 +284,12 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   ## WRITE VALIDATION OUTPUT AS CSV
   FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
   colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
-<<<<<<< HEAD
   # write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
   print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
-=======
   write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
   print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
   setwd(path.script)
   
->>>>>>> origin/master
 } # END OF FOLD PER STUDY
 } # END OF CROSS-FOLD VALIDATION
 

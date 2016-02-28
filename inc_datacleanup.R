@@ -40,7 +40,7 @@ dream9.cleanData <- function(x)
   
   
   ## DELETE ROWS THAT HAVE . AS DISCONT
-  # core.table <- core.table[!(core.table$DISCONT == '.') ,]
+  core.table <- core.table[!(core.table$DISCONT == '.') ,]
   
   # REMOVE THE UNEEDED COLUMNS ####
   ## SINGLE VALUE        (DOMAIN, LKADT_PER, HGTBLCAT, WGTBLCAT, TRT1_ID)
