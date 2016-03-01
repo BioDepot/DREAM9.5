@@ -23,7 +23,7 @@
 ###########################################################################################
 
 # ADJUST-ACCORDINGLY (IFNECESSARY)
-path.script = "~/Workspaces/git_repos/DREAM9.5/"
+path.script = "~/Documents/GITHUB/DREAM9.5/"
 setwd(path.script)
 
 require(FSelector) 
@@ -38,9 +38,6 @@ library(e1071)
 library(impute)
 library(caret)
 library(randomForest)
-library(mlr)
-library(unbalanced)
-
 
 source(paste0(path.script,"inc_datacleanup.r"))     # Contains functions to clean up the data
 source(paste0(path.script,"score.R"))               # Contains Score.R from Synapse as scoring
@@ -49,14 +46,35 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+CV                    = c(rep(1:10))    # Number of Crossfold Validation 
+# CV                    = union( rep(1:10),seq(1,100,10))
+
+=======
+=======
+>>>>>>> origin/master
+>>>>>>> Stashed changes
 CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
 CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
 CV <- 1
 # CV                    = seq(3,110,10)
+>>>>>>> origin/master
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
+=======
+=======
+>>>>>>> origin/master
+>>>>>>> Stashed changes
 STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
 STUDY                 = c(1,2,3)  
 # STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
@@ -143,7 +161,7 @@ halabi <- c(halabi,
             "PERITONEUM",
             "COLON",
             "SOFT_TISSUE"
-           )
+)
 
 # "HEAD_AND_NECK",
 # "STOMACH",
@@ -164,9 +182,19 @@ table.for.model             <- table.for.model[,!(colnames(table.for.model) %in%
 split.table                 <- split(table.for.model, table.for.model$STUDYID)
 
 ####### CROSSFOLD START ##############################################################
+library(caret)
 
 for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 {
+<<<<<<< HEAD
+  # Unless tuning is performed, these vaiables should be disabled
+  # rf.ntree              = cv
+  # balace.ratio          = cv
+  # rf.mtry               = cv
+  # k                     = cv
+  train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
+  # detach(package:caret, unload=T, force=T) 
+=======
 # Unless tuning is performed, these vaiables should be disabled
 # rf.ntree              = cv
 # balace.ratio          = cv
@@ -199,6 +227,11 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   ## ONLY USE THIS TO PERFORM SUBMISSION: START ####
   # curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
 #  curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
 
   
   ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
@@ -216,34 +249,120 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   binary.cols           <- intersect(all.features, binary.cols)
   numeric.cols          <- intersect(all.features, numeric.cols)
   cols.to.convert       <- intersect(all.features, factor.cols)
+>>>>>>> origin/master
 
-
-  ####### BALANCE THE TRAINING DATA ##############################################################
-  set.seed(10)
-  library(unbalanced)
-  balancer.ubunder                <- ubUnder(X=curr.training.data[,-c(3)], Y=curr.training.data[,'DISCONT'], perc = balace.ratio, method = "percUnder")
-  curr.training.data              <- cbind(balancer.ubunder$Y, balancer.ubunder$X)
-  names(curr.training.data)[1]    <- paste("DISCONT")
-  detach(package:unbalanced, unload=T, force=T) 
-  detach(package:mlr, unload=T, force=T)
+>>>>>>> origin/master
   
-  
-  ####### METADATA EDITOR ##############################################################
-  for(i in 1:length(cols.to.convert))
+  for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   {
-    cname                               <- cols.to.convert[i]
-    # Convert to R Valid Names. Caret is very picky
-    curr.testing.data[,cname]           <- as.factor(make.names(curr.testing.data[,cname])) 
-    curr.training.data[,cname]          <- as.factor(make.names(curr.training.data[,cname]))
-    table.for.validation[,cname]        <- as.factor(make.names(table.for.validation[,cname]))
-
-    # Make sure that factor levels between training and testing match
-    level.list <- union(levels(curr.training.data[,cname]), levels(curr.testing.data[,cname]))
-    level.list <- union(levels(table.for.validation[,cname]),level.list)
-    levels(curr.training.data[,cname])  <- level.list
-    levels(curr.testing.data[,cname])   <- level.list
-    levels(table.for.validation[,cname])   <- level.list
+    ## RETRIEVE THE CLEAN DATA SET 
+    ## THE FUNCTION ASSUMES THAT THE CORE DATA IS ALREADY LOADED
+    curr.training.data <- as.data.frame(get.training.data(fold=curr.study))
+    curr.testing.data  <- as.data.frame(get.testing.data(fold=curr.study))
+    testing.name       <- get.testing.name(curr.study)
     
+<<<<<<< HEAD
+    
+    # testing.name       <- get.testing.name(curr.study)
+    
+    
+#     
+    if (curr.study == 4 ){         #  USE ALL FOR TESTING/TRAINING
+      set.seed(123) # Tuning? Normal: Disabled #####
+      curr.training.data <- table.for.model[train.index,]
+      curr.testing.data  <- table.for.model[-train.index,]
+      testing.name      <- paste("ALL-fold")
+    }
+    curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+#     
+#     
+    ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
+    #   to.drop <- union(to.drop, c("SMOKFREQ",	"SMOKSTAT", "HEIGHTBL", "WEIGHTBL",	"WEIGHT", "NON_TARGET", "AGE", "X"))
+    #   tmp     <- curr.testing.data[curr.testing.data$DISCONT==1,]
+    #   tmp     <- tmp[,-c(1,2,3)]
+    #   tmp     <- sapply(tmp, var)
+    #   tmp     <- tmp[tmp==0]
+    #   to.drop <- union(to.drop, attr(tmp,"names"))
+    #   curr.training.data <- curr.training.data[,!names(curr.training.data) %in% to.drop]
+    #   
+    
+    ## UPDATE THE LIST OF VARIABLE GROUPS
+    all.features          <- intersect(colnames(curr.training.data),colnames(curr.testing.data))
+    binary.cols           <- intersect(all.features, binary.cols)
+    numeric.cols          <- intersect(all.features, numeric.cols)
+    cols.to.convert       <- intersect(all.features, factor.cols)
+    
+    
+    ####### BALANCE THE TRAINING DATA ##############################################################
+    library(mlr)
+    library(unbalanced)
+    set.seed(10)
+    balancer.ubunder                <- ubUnder(X=curr.training.data[,-c(3)], Y=curr.training.data[,'DISCONT'], perc = balace.ratio, method = "percUnder")
+    curr.training.data              <- cbind(balancer.ubunder$Y, balancer.ubunder$X)
+    names(curr.training.data)[1]    <- paste("DISCONT")
+    detach(package:unbalanced, unload=T, force=T) 
+    detach(package:mlr, unload=T, force=T)
+    
+    
+    ####### METADATA EDITOR ##############################################################
+    for(i in 1:length(cols.to.convert))
+    {
+      cname                               <- cols.to.convert[i]
+      # Convert to R Valid Names. Caret is very picky
+      curr.testing.data[,cname]           <- as.factor(make.names(curr.testing.data[,cname])) 
+      curr.training.data[,cname]          <- as.factor(make.names(curr.training.data[,cname]))
+      table.for.validation[,cname]        <- as.factor(make.names(table.for.validation[,cname]))
+      
+      # Make sure that factor levels between training and testing match
+      level.list <- union(levels(curr.training.data[,cname]), levels(curr.testing.data[,cname]))
+      level.list <- union(levels(table.for.validation[,cname]),level.list)
+      levels(curr.training.data[,cname])  <- level.list
+      levels(curr.testing.data[,cname])   <- level.list
+      levels(table.for.validation[,cname])   <- level.list
+      
+    }
+    ##### FEATURE SELECTION ##############################################################
+    ##### USING HALABI
+    weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
+    features  <- c(halabi, cutoff.k(weights,k))
+    
+    ##### UNIVARIATE (DEFAULT=DISABLED)
+    #   sub.fs      <- curr.training.data
+    #   sub.fs$RPT  <- NULL
+    #   weights     <- chi.squared(DISCONT ~., sub.fs)
+    #   features    <- cutoff.k(weights,k)
+    
+    ####### CLASSIFICATION / MODEL ##############################################################
+    
+    x                <- as.data.frame(curr.training.data[,features])
+    y                <- as.factor(make.names(curr.training.data$DISCONT,unique = F))   
+    set.seed(123)
+    
+    model.rf          <- randomForest(x=x, y=y, mtry=round(length(features)/rf.mtry), na.action = na.omit, probability=T, 
+                                      ntree = (length(features)*rf.ntree),type="classification",replace = T)
+    prob              <- predict(model.rf, curr.testing.data, type = "prob")[,2]
+    val.prob          <- predict(model.rf, table.for.validation,type="prob")[,2]
+    
+    ####### OUTPUT ##############################################################
+    OUTPUT.TABLE          <- cbind(curr.testing.data[,features],prob, as.factor(round(prob)), curr.testing.data$DISCONT)
+    SCORING.TABLE         <- rbind(SCORING.TABLE, c(testing.name, dream9.score(prob, curr.testing.data$DISCONT)))
+    ACC                   <- round(score_q2(prob, curr.testing.data$DISCONT)*100)
+    
+    # setwd("~/Dropbox/DREAM-F1000/OUTPUT")
+    ## WRITE OUTPUT AS CSV
+    # write.csv(OUTPUT.TABLE, file = paste("OUTPUT/SUBSETTEST-",testing.name,"-",ACC,".csv", sep=""))
+    # print(paste("---- FILE:", "SUBSETTEST-",testing.name,"-",ACC,".csv  WRITTEN TO HARDDRIVE ---",sep=""))
+    # write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
+    # print(paste("---- FILE:", "SCORE-",testing.name,"-",ACC,".csv WRITTEN TO HARDDRIVE ---",sep=""))
+    
+    
+    ## WRITE VALIDATION OUTPUT AS CSV
+    FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
+    colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
+    write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-RF",testing.name,ACC,".csv", sep=""),row.names = FALSE)
+    # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
+  } # END OF FOLD PER STUDY
+=======
   }
   ##### FEATURE SELECTION ##############################################################
   ##### USING HALABI
@@ -291,9 +410,8 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
   setwd(path.script)
   
 } # END OF FOLD PER STUDY
+>>>>>>> origin/master
 } # END OF CROSS-FOLD VALIDATION
-
-
 scoring.rows             <- SCORING.TABLE[,1]
 SCORING.TABLE            <- SCORING.TABLE[,-1]
 SCORING.TABLE            <- apply(SCORING.TABLE,2,as.numeric)
@@ -302,6 +420,4 @@ print(SCORING.TABLE)
 plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
-# write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
-save.image("~/Documents/GITHUB/DREAM9.5/f1000.RData")
-#load("~/Documents/GITHUB/DREAM9.5/f1000.RData")
+write.csv(cbind(CV,SCORING.TABLE), file = paste("OUTPUT/RF-",testing.name,"-",ACC,".csv", sep=""))
