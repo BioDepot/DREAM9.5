@@ -23,7 +23,7 @@
 ###########################################################################################
 
 # ADJUST-ACCORDINGLY (IFNECESSARY)
-path.script = "~/Documents/GITHUB/DREAM9.5/"
+path.script = "~/Workspaces/R/DREAM9.5/"
 setwd(path.script)
 
 require(FSelector) 
@@ -46,13 +46,13 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
-CV                    = seq(3,30,5)
+CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
+# CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
-# STUDY                 = c(2)        # Enable to perform prediction for the Core_Validation Dataset  
+STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -62,13 +62,16 @@ balace.ratio          = 31
 rf.ntree              = 180
 rf.mtry               = 4
 k                     = 6
+# k = 43
+
+x.axis                = "Cross-fold Validation"
 
 ####### VARIABLE LIST ##############################################################
 # IN GENERAL, HERE'S THE VARIABLES
 core_table_training   <- NULL            # ORIGINAL CORE TRAINING  (RAW)
 core_table_validation <- NULL            # ORIGINAL CORE TESTING  (RAW)
 table.for.model       <- NULL            # CLEANED, AUGMENTED CORE TRAINING
-table.for.validation  <- NULL            # CLEANED, UGMENTED CORE TESTING
+table.for.validation  <- NULL            # CLEANED, AUGMENTED CORE TESTING
 curr.training.data    <- NULL            # A SUBSET OF CURRENT FOLD'S TRAINING DATA
 curr.testing.data     <- NULL            # A SUBSET OF CURRENT FOLD'S TESTING DATA
 SCORING.TABLE         <- NULL            # SCORE RESULTS 
@@ -78,9 +81,9 @@ FINAL.TABLE           <- NULL            # CORE TESTING/VALIDATION FROM SYNAPSE 
 # 
 ####### PREPROCESS ##############################################################
 ## GET THE DATA
-core_table_training     <- read.csv("DATA/CoreTable_training.csv"  , stringsAsFactors = F)
-core_table_validation1  <- read.csv("DATA/Table_validation.csv", stringsAsFactors = F)
-core_table_validation2  <- read.csv("DATA/CoreTable_leaderboard.csv", stringsAsFactors = F)
+core_table_training     <- read.csv("./DATA/CoreTable_training.csv"  , stringsAsFactors = F)
+core_table_validation1  <- read.csv("./DATA/CoreTable_validation.csv", stringsAsFactors = F)
+core_table_validation2  <- read.csv("./DATA/CoreTable_leaderboard.csv", stringsAsFactors = F)
 core_table_validation   <- rbind(core_table_validation1, core_table_validation2)
 
 ## GET THE DATA CLEANED UP
@@ -160,7 +163,6 @@ split.table                 <- split(table.for.model, table.for.model$STUDYID)
 
 for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 {
-<<<<<<< HEAD
   # Unless tuning is performed, these vaiables should be disabled
   # rf.ntree              = cv
   # balace.ratio          = cv
@@ -171,63 +173,6 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
   detach(package:caret, unload=T, force=T) 
   
   for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
-=======
-# Unless tuning is performed, these vaiables should be disabled
-# rf.ntree              = cv
-# balace.ratio          = cv
-# rf.mtry               = cv
-k                     = cv
-library(caret)
-train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
-detach(package:caret, unload=T, force=T) 
-
-for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
-{
-  ## RETRIEVE THE CLEAN DATA SET 
-  ## THE FUNCTION ASSUMES THAT THE CORE DATA IS ALREADY LOADED
-  curr.training.data <- as.data.frame(get.training.data(fold=curr.study))
-  curr.testing.data  <- as.data.frame(get.testing.data(fold=curr.study))
-  testing.name       <- get.testing.name(curr.study)
-  
-  
-  if (curr.study == 4 ){         #  USE ALL FOR TESTING/TRAINING
-    set.seed(123) # Tuning? Normal: Disabled #####
-    curr.training.data <- table.for.model[train.index,]
-    curr.testing.data  <- table.for.model[-train.index,]
-    testing.name      <- paste("ALL-fold")
-  }
-  
-  ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
-#   to.drop <- union(to.drop, c("SMOKFREQ",	"SMOKSTAT", "HEIGHTBL", "WEIGHTBL",	"WEIGHT", "NON_TARGET", "AGE", "X"))
-#   tmp     <- curr.testing.data[curr.testing.data$DISCONT==1,]
-#   tmp     <- tmp[,-c(1,2,3)]
-#   tmp     <- sapply(tmp, var)
-#   tmp     <- tmp[tmp==0]
-#   to.drop <- union(to.drop, attr(tmp,"names"))
-#   curr.training.data <- curr.training.data[,!names(curr.training.data) %in% to.drop]
-#   
-  
-  ## UPDATE THE LIST OF VARIABLE GROUPS
-  all.features          <- intersect(colnames(curr.training.data),colnames(curr.testing.data))
-  binary.cols           <- intersect(all.features, binary.cols)
-  numeric.cols          <- intersect(all.features, numeric.cols)
-  cols.to.convert       <- intersect(all.features, factor.cols)
-
-
-  ####### BALANCE THE TRAINING DATA ##############################################################
-  library(mlr)
-  library(unbalanced)
-  set.seed(10)
-  balancer.ubunder                <- ubUnder(X=curr.training.data[,-c(3)], Y=curr.training.data[,'DISCONT'], perc = balace.ratio, method = "percUnder")
-  curr.training.data              <- cbind(balancer.ubunder$Y, balancer.ubunder$X)
-  names(curr.training.data)[1]    <- paste("DISCONT")
-  detach(package:unbalanced, unload=T, force=T) 
-  detach(package:mlr, unload=T, force=T)
-  
-  
-  ####### METADATA EDITOR ##############################################################
-  for(i in 1:length(cols.to.convert))
->>>>>>> parent of a62cfca... Submission 1
   {
     ## RETRIEVE THE CLEAN DATA SET 
     ## THE FUNCTION ASSUMES THAT THE CORE DATA IS ALREADY LOADED
@@ -235,7 +180,6 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     curr.testing.data  <- as.data.frame(get.testing.data(fold=curr.study))
     testing.name       <- get.testing.name(curr.study)
     
-<<<<<<< HEAD
     
     testing.name       <- get.testing.name(curr.study)
     
@@ -336,55 +280,13 @@ for (curr.study in STUDY)  ## LOOP THROUGH THE DATA FRAMES
     write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
     # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
   } # END OF FOLD PER STUDY
-=======
-  }
-  ##### FEATURE SELECTION ##############################################################
-  # weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
-  # features  <- c(halabi, cutoff.k(weights,k))
-  
-  sub.fs      <- curr.training.data
-  sub.fs$RPT  <- NULL
-  weights     <- chi.squared(DISCONT ~., sub.fs)
-  features    <- cutoff.k(weights,k)
-
-  ####### CLASSIFICATION / MODEL ##############################################################
-  
-  x                <- as.data.frame(curr.training.data[,features])
-  y                <- as.factor(make.names(curr.training.data$DISCONT,unique = F))   
-  set.seed(123)
-  
-  model.rf          <- randomForest(x=x, y=y, mtry=round(length(features)/rf.mtry), na.action = na.omit, probability=T, 
-                                    ntree = (length(features)*rf.ntree),type="classification",replace = T)
-  prob              <- predict(model.rf, curr.testing.data, type = "prob")[,2]
-  val.prob          <- predict(model.rf, table.for.validation,type="prob")[,2]
-  
-  ####### OUTPUT ##############################################################
-  OUTPUT.TABLE          <- cbind(curr.testing.data[,features],prob, as.factor(round(prob)), curr.testing.data$DISCONT)
-  SCORING.TABLE         <- rbind(SCORING.TABLE, c(testing.name, dream9.score(prob, curr.testing.data$DISCONT)))
-  ACC                   <- round(score_q2(prob, curr.testing.data$DISCONT)*100)
-  
-  # setwd("~/Dropbox/DREAM-F1000/OUTPUT")
-  ## WRITE OUTPUT AS CSV
-  # write.csv(OUTPUT.TABLE, file = paste("OUTPUT/SUBSETTEST-",testing.name,"-",ACC,".csv", sep=""))
-  # print(paste("---- FILE:", "SUBSETTEST-",testing.name,"-",ACC,".csv  WRITTEN TO HARDDRIVE ---",sep=""))
-  # write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
-  # print(paste("---- FILE:", "SCORE-",testing.name,"-",ACC,".csv WRITTEN TO HARDDRIVE ---",sep=""))
-  
-  
-  ## WRITE VALIDATION OUTPUT AS CSV
-  FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
-  colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
-  write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
-  # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
-} # END OF FOLD PER STUDY
->>>>>>> parent of a62cfca... Submission 1
 } # END OF CROSS-FOLD VALIDATION
 scoring.rows             <- SCORING.TABLE[,1]
 SCORING.TABLE            <- SCORING.TABLE[,-1]
 SCORING.TABLE            <- apply(SCORING.TABLE,2,as.numeric)
 row.names(SCORING.TABLE) <- scoring.rows
 print(SCORING.TABLE)
-plot(cbind(CV,SCORING.TABLE[,1]))
+plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
 write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
