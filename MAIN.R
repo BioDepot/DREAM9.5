@@ -23,7 +23,7 @@
 ###########################################################################################
 
 # ADJUST-ACCORDINGLY (IFNECESSARY)
-path.script = "~/Workspaces/R/DREAM9.5/"
+path.script = "~/Documents/GITHUB/DREAM9.5/"
 setwd(path.script)
 
 require(FSelector) 
@@ -46,13 +46,13 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-CV                    = c(rep(1:5))    # Number of Crossfold Validation, each fold takes about 40 mins 
+CV                    = c(rep(1))    # Number of Crossfold Validation, each fold takes about 40 mins 
 # CV                    = seq(3,110,10)
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
-STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
+STUDY                 = c(3)        # Enable to perform prediction for the Core_Validation Dataset  
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -277,7 +277,7 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
     ## WRITE VALIDATION OUTPUT AS CSV
     FINAL.TABLE             <- as.data.frame(cbind(as.character(table.for.validation$RPT),val.prob, as.numeric(round(val.prob))))
     colnames (FINAL.TABLE)  <- c("RPT","RISK","DISCONT")
-    write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
+    # write.csv(FINAL.TABLE, file = paste("OUTPUT/VALIDATION-",testing.name,ACC,".csv", sep=""),row.names = FALSE)
     # print(paste("---- FILE:", "VALIDATION-",ACC,".csv WRITTEN TO HARDDRIVE ---", sep=""))
   } # END OF FOLD PER STUDY
 } # END OF CROSS-FOLD VALIDATION
@@ -289,4 +289,4 @@ print(SCORING.TABLE)
 plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
-write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
+# write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
