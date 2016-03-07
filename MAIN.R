@@ -46,13 +46,13 @@ source(paste0(path.script,"inc_functions.R"))       # Contains various functions
 ###### GLOBAL VARIALBLES ##############################################################
 ## GLOBAL VARIABLES AND PARAMETERS
 
-CV                    = c(rep(1))    # Number of Crossfold Validation, each fold takes about 40 mins 
-# CV                    = seq(3,110,10)
+CV                    = c(rep(1:10))    # Number of Crossfold Validation, each fold takes about 40 mins 
+CV                    = c(rep(1:9), seq(10,100,10))
 # Itterate through every study with following target 
 # (and use the other two as training data) 
 # 1. ACCENT2, 2. EFC6546, 3. CELGENE 4. ALL COMBINED
 STUDY                 = c(1,2,3,4)  
-STUDY                 = c(3)        # Enable to perform prediction for the Core_Validation Dataset  
+STUDY                 = c(4)        # Enable to perform prediction for the Core_Validation Dataset  
 
 ## MODEL TUNING
 FOLD.RATIO            = 0.9       # How many goes as training data, for STUDY= 4 ONLY
@@ -160,14 +160,14 @@ table.for.model             <- table.for.model[,!(colnames(table.for.model) %in%
 split.table                 <- split(table.for.model, table.for.model$STUDYID)
 
 ####### CROSSFOLD START ##############################################################
-
+CV <- rep(1:length(intersect(halabi, colnames(table.for.model))))
 for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
 {
   # Unless tuning is performed, these vaiables should be disabled
   # rf.ntree              = cv
   # balace.ratio          = cv
   # rf.mtry               = cv
-  # k                     = cv
+  k                     = cv
   library(caret)
   train.index <- createDataPartition(table.for.model$DISCONT, p = FOLD.RATIO,list = FALSE, times = 1)
   detach(package:caret, unload=T, force=T) 
@@ -186,12 +186,14 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
     
     
     if (curr.study == 4 ){         #  USE ALL FOR TESTING/TRAINING
-      # set.seed(123) # Tuning? Normal: Disabled #####
+      set.seed(123) # Tuning? Normal: Disabled #####
       curr.training.data <- table.for.model[train.index,]
       curr.testing.data  <- table.for.model[-train.index,]
       testing.name      <- paste("ALL-fold")
     }
-    curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
+    
+    # ENABLE THIS TO SCORE AZ
+    #curr.training.data <- as.data.frame(rbind(curr.training.data,curr.testing.data))
     
     
     ## DROP VARIABLES THAT ARE NOT AVAILABLE IN TESTING FROM TRAINING AND SOME REDUDANT
@@ -244,6 +246,22 @@ for(cv in CV) #Begin Cross-Fold for Validation or for Model Tuning
     weights   <- random.forest.importance(DISCONT ~., curr.training.data[,setdiff(names(curr.training.data),c(halabi,"RPT","STUDYID"))], importance.type = 1)
     features  <- c(halabi, cutoff.k(weights,k))
     
+    
+    ####
+    HC.4 <- c("LYMPH_NODES","LIVER", "PLEURA", "PROSTATE", "GONADOTROPIN", "HMG_COA_REDUCT", "CEREBACC", "MHENDO", "AGEGRP2X..75", "ECOG_C2", "TRT3_IDUNKNOWN", "ALP", "NEU", "PLT", "TBILI", "CREACL", "MG", "GLU")
+    HC.Sanofi <- c("LYMPH_NODES", "LUNGS", "PLEURA", "PROSTATE", "BLADDER", "ORCHIDECTOMY", "BILATERAL_ORCHIDECTOMY", "GLUCOCORTICOID", "GONADOTROPIN", "CORTICOSTEROID", "IMIDAZOLE", "CEREBACC", "MHHEPATO", "MHINJURY", "MHRESP", "ALP", "AST", "CREAT", "HB", "NEU", "PSA", "CREACL", "MG", "ALB")
+    HC.Celgene <- c("NA.", "LYMPH_NODES", "OTHER", "PROSTATE", "TURP", "BILATERAL_ORCHIDECTOMY", "CORTICOSTEROID", "ACE_INHIBITORS", "BETA_BLOCKING", "GASTREFL", "PULMEMB", "COPD", "AGEGRP2X..75", "RACE_CWhite", "REGION_CWESTERN.EUROPE", "TRT2_IDUNKNOWN", "CREAT", "PSA", "TBILI", "CREACL", "ALB", "TPRO", "BUN")
+    HC.Ascent <- c("NA.", "LIVER", "OTHER", "ORCHIDECTOMY", "ANALGESICS", "ANTI_ANDROGENS", "HMG_COA_REDUCT", "ESTROGENS", "CEREBACC", "DVT", "PUD", "SPINCOMP", "AGEGRP2X65.74", "SMOKEYES", "SMOKSTATUNKNOWN", "TRT2_IDUNKNOWN","TRT3_IDUNKNOWN", "AST", "HB", "WBC", "MG", "ALB")
+    Halabi <- c("RACE_C", "AGEGRP2", "BMI", "PRIOR_RADIOTHERAPY", "ANALGESICS", "ECOG_C", "ALB", "LDH", "WBC", "AST", "TBILI", "PLT", "HB", "ALT", "PSA", "ALP", "RECTAL", "LYMPH_NODES", "KIDNEYS", "LUNGS", "LIVER", "PLEURA", "OTHER", "PROSTATE", "ADRENAL", "BLADDER", "PERITONEUM", "COLON", "SOFT_TISSUE")
+    RF.4 <- c("TRT2_IDUNKNOWN", "TRT2_IDDOCETAXEL", "REGION_C", "SMOKEUNKNOWN", "SPINCOMP", "GLU")
+    RF.Sanofi <- c("TRT2_IDUNKNOWN", "TRT2_IDDOCETAXEL", "REGION_C", "SMOKEUNKNOWN", "GLU", "SPINCOMP")
+    RF.Ascent <- c("TRT2_IDDOCETAXEL", "TRT2_IDUNKNOWN", "SMOKEUNKNOWN", "REGION_C", "CREACL", "MHBLOOD")
+    RF.Celgene <- c("TRT2_IDDOCETAXEL", "TRT2_IDUNKNOWN", "REGION_C", "SMOKEUNKNOWN", "COPD", "NA.")
+    
+    HC <- union(union(HC.4,HC.Sanofi), union(HC.Celgene,HC.Ascent))
+    RF <- union(union(RF.4,RF.Sanofi),union(RF.Ascent, RF.Celgene))
+    # features <- HC
+    # features <- setdiff(features, union(c("TRT2_IDDOCETAXEL","TRT2_IDUNKNOWN"),setdiff(features,colnames(curr.training.data))))
     ##### UNIVARIATE (DEFAULT=DISABLED)
     #   sub.fs      <- curr.training.data
     #   sub.fs$RPT  <- NULL
@@ -286,7 +304,7 @@ SCORING.TABLE            <- SCORING.TABLE[,-1]
 SCORING.TABLE            <- apply(SCORING.TABLE,2,as.numeric)
 row.names(SCORING.TABLE) <- scoring.rows
 print(SCORING.TABLE)
-plot(cbind(CV,SCORING.TABLE[,1]),xlab=x.axis)
+plot(cbind(CV,SCORING.TABLE[,1]),xlab="Fold", ylab="Average AUC", main="Random forest importance cutoff")
 print(paste("MEAN AUC: ", mean(SCORING.TABLE[,1])))
 CV[which.max(SCORING.TABLE[,1])]
 # write.csv(SCORING.TABLE, file = paste("OUTPUT/SCORE-",testing.name,"-",ACC,".csv", sep=""))
