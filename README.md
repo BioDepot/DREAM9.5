@@ -1,7 +1,7 @@
                     	DREAM CHALLENGES SUBMISSION (CHALLENGE 2.B)
 
                       		UNIVERSITY OF WASHINGTON TACOMA
-                                	danielkr@uw.edu
+                      		
                                       SUMMER - 2015
 
 Predicting Discontinuation of Docetaxel Treatment for Metastatic 
